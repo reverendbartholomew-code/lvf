@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Low Voltage Diagnostic Flowchart</title>
+<link rel="stylesheet" href="style.css">
+<!-- PWA manifest -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#007bff">
+</head>
+<body>
+<nav>
+  <ul>
+    <li><a href="#" onclick="goHome()">Low Voltage</a></li>
+  </ul>
+</nav>
+
+<div class="warning-text">
+  <p>This is for LOW VOLTAGE ONLY!</p>
+  <p><strong>Do NOT reference to ground unless otherwise specified.</strong></p>
+  <p>Ensure that all wires and connections are in good condition at each step.</p>
+</div>
+
+<div class="question" id="question"></div>
+<div class="button-container" id="buttons"></div>
+
+<script>
+// -------------------------
+// Flowchart data embedded
+// -------------------------
+const flowcharts = {
+  lowvoltage: {
+    "start": {"text":"Does the unit have a condensate pump WITH a float switch hooked up?","options":[{"text":"Yes","next":"verify_float"},{"text":"No","next":"stat_wire_colors"}]},
+    "verify_float":{"text":"Does the float switch have continuity through it when lowered? You want ZERO ohms, not infinite ohms.","options":[{"text":"Yes","next":"stat_wire_colors"},{"text":"No","next":"replace_float"}]},
+    "replace_float":{"text":"Replace the float switch.","options":[{"text":"Continue","next":"stat_wire_colors"},{"text":"Restart","next":"start"}]},
+    "stat_wire_colors":{"text":"Do all the wire colors match at the thermostat and at the indoor unit? (eg. Red > R, Blue > Y on both)","options":[{"text":"Yes","next":"cooling_set"},{"text":"No","next":"color_correct"}]},
+    "color_correct":{"text":"Correct so all colors match their respective terminals.","options":[{"text":"Continue","next":"cooling_set"},{"text":"Restart","next":"start"}]},
+    "cooling_set":{"text":"Is the thermostat set for cooling?","options":[{"text":"Yes","next":"time_delay"},{"text":"No","next":"set_cooling"}]},
+    "set_cooling":{"text":"Set thermostat to cooling; make setpoint five degrees below room temp.","options":[{"text":"Continue","next":"time_delay"},{"text":"Reset","next":"start"}]},
+    "time_delay":{"text":"Is the time delay satisfied? Select 'Yes' if there is no time delay.","options":[{"text":"Yes","next":"24vac_trans"},{"text":"No","next":"time_wait"}]},
+    "time_wait":{"text":"Wait for the time delay to satisfy. Usually indicated by a blinking light to go solid.","options":[{"text":"Continue","next":"24vac_trans"},{"text":"Reset","next":"start"}]},
+    "24vac_trans":{"text":"Is there 24vac leg to leg at the transformer?","options":[{"text":"Yes","next":"fan_run"},{"text":"No","next":"line_volt"}]},
+    "line_volt":{"text":"Is there correct line voltage coming into the transformer?","options":[{"text":"Yes","next":"replace_trans"},{"text":"No","next":"high_volt"}]},
+    "high_volt":{"text":"Fix the line voltage supply.","options":[{"text":"Continue","next":"24vac_trans"},{"text":"Reset","next":"start"}]},
+    "replace_trans":{"text":"Replace the transformer.","options":[{"text":"Continue","next":"24vac_trans"},{"text":"Reset","next":"start"}]},
+    "fan_run":{"text":"Is the indoor fan running?","options":[{"text":"Yes","next":"heat_pump"},{"text":"No","next":"fan_call"}]},
+    "fan_call":{"text":"Is there 24vac between G and C at the ASK MIKE","options":[{"text":"Yes","next":"fan_power"},{"text":"No","next":"replace_stat"}]},
+    "replace_stat":{"text":"Replace the thermostat.","options":[{"text":"Continue","next":"fan_call"},{"text":"Reset","next":"start"}]},
+    "fan_power":{"text":"Is there correct line voltage at the fan?","options":[{"text":"Yes","next":"fan_control"},{"text":"No","next":"replace_fan_motor"}]},
+    "replace_fan_motor":{"text":"Replace the fan motor.","options":[{"text":"Continue","next":"fan_run"},{"text":"Reset","next":"start"}]},
+    "fan_control":{"text":"Verify correct operation of the fan relay and/or circuit board, depending on what controls the fan. Replace as needed.","options":[{"text":"Continue","next":"fan_run"},{"text":"Reset","next":"start"}]},
+    "heat_pump":{"text":"Is the system a heat pump?","options":[{"text":"Yes","next":"heat_when_cooling"},{"text":"No","next":"cool_call"}]},
+    "cool_call":{"text":"Is there 24vac between Y and C at ASK MIKE?","options":[{"text":"Yes","next":"cond_yc"},{"text":"No","next":"verify_connections"}]},
+    "verify_connections":{"text":"Verify all stat wire connections. If connections are good, verify 24vac between Y and C at the thermostat. If not present, replace the thermostat.","options":[{"text":"Continue","next":"cool_call"},{"text":"Reset","next":"start"}]},
+    "cond_yc":{"text":"Are the correct wires landed on Y and C at the condenser? (ASK MIKE)","options":[{"text":"Yes","next":"contactor_coil"},{"text":"No","next":"cond_wires"}]},
+    "cond_wires":{"text":"Land the correct wires on Y and C at the condenser.","options":[{"text":"Continue","next":"cond_yc"},{"text":"Reset","next":"start"}]},
+    "contactor_coil":{"text":"Is there 24vac across the condenser's contactor's COIL side, leg to leg?","options":[{"text":"Yes","next":"contactor_pull"},{"text":"No","next":"verify_wires"}]},
+    "verify_wires":{"text":"Verify all connections and wire nuts. If connections and nuts are good, there is likely a break in the wire from the unit. Identify and replace the wire.","options":[{"text":"Continue","next":"contactor_coil"},{"text":"Reset","next":"start"}]},
+    "contactor_pull":{"text":"Is the contactor pulled in?","options":[{"text":"Yes","next":"compressor_run"},{"text":"No","next":"replace_contactor"}]},
+    "replace_contactor":{"text":"Replace the contactor.","options":[{"text":"Continue","next":"contactor_pull"},{"text":"Reset","next":"start"}]},
+    "compressor_run":{"text":"Is the compressor running?","options":[{"text":"Yes","next":"cond_fan_run"},{"text":"No","next":"cap_check"}]},
+    "cond_fan_run":{"text":"Is the condenser fan running?","options":[{"text":"Yes","next":"refrigerant"},{"text":"No","next":"cap_check"}]},
+    "cap_check":{"text":"Check the capacitor, replace if necessary.","options":[{"text":"Continue","next":"compressor_run"},{"text":"Reset","next":"start"}]},
+    "refrigerant":{"text":"Verify the refrigerant charge.","options":[{"text":"Continue","next":"call_mike"},{"text":"Reset","next":"start"}]},
+    "call_mike":{"text":"Call Mike.","options":[{"text":"Reset","next":"start"}]},
+    "heat_when_cooling":{"text":"Is the system heating when it should be cooling?","options":[{"text":"Yes","next":"reversing_valve"},{"text":"No","next":"cob"}]},
+    "reversing_valve":{"text":"Is there 24vac leg to leg at the reversing valve?","options":[{"text":"Yes","next":"rev_cool_1"},{"text":"No","next":"rev_cool_2"}]},
+    "rev_cool_1":{"text":"Is there supposed to be 24vac for cooling operations? This MUST be verified with the manufacturer.","options":[{"text":"Yes","next":"replace_rever_valve"},{"text":"No","next":"stat_heat_pump"}]},
+    "stat_heat_pump":{"text":"Change the programming of the thermostat for correct heat pump operations.","options":[{"text":"Continue","next":"heat_when_cooling"},{"text":"Reset","next":"start"}]},
+    "replace_rever_valve":{"text":"Replace the reversing valve.","options":[{"text":"Continue","next":"heat_when_cooling"},{"text":"Reset","next":"start"}]},
+    "rev_cool_2":{"text":"Is there supposed to be 24vac for cooling operations? This MUST be verified with the manufacturer. ASK MIKE","options":[{"text":"Yes","next":"cob"},{"text":"No","next":"replace_rever_valve"}]},
+    "cob":{"text":"Is there 24vac between C and O/B?","options":[{"text":"Yes","next":"cob_out"},{"text":"No","next":"verify_stat_program"}]},
+    "verify_stat_program":{"text":"Verify the programming of the thermostat and replace if necessary.","options":[{"text":"Continue","next":"cob"},{"text":"Reset","next":"start"}]},
+    "cob_out":{"text":"Is there 24vac at condenser between C and O/B wires?","options":[{"text":"Yes","next":"ambient_temp"},{"text":"No","next":"verify_cob_con"}]},
+    "verify_cob_con":{"text":"Verify all connections. If connections are all good, replace stat wire to the condenser.","options":[{"text":"Continue","next":"cob_out"},{"text":"Reset","next":"start"}]},
+    "ambient_temp":{"text":"Is the ambient temperature above the unit's designed running temp?","options":[{"text":"Yes","next":"continue_diagnostics"},{"text":"No","next":"too_cold"}]},
+    "too_cold":{"text":"It is too cold for the A/C to run. System is being held out by the outdoor sensor.","options":[{"text":"Reset","next":"start"}]},
+    "continue_diagnostics":{"text":"Continue diagnostics using factory wiring diagram for troubleshooting. Pay special attention to a defrost board failing and holding out cooling functions (if a defrost board is present).","options":[{"text":"Reset","next":"start"}]}
+  }
+};
+
+// -------------------------
+// App state
+// -------------------------
+let currentStep = 'start';
+let historyStack = [];
+let flowchart = flowcharts.lowvoltage;
+
+// -------------------------
+// Rendering & navigation
+// -------------------------
+function renderStep(stepId) {
+  const step = flowchart[stepId];
+  if (!step) return;
+  currentStep = stepId;
+
+  const questionDiv = document.getElementById('question');
+  questionDiv.innerHTML = `<p>${step.text}</p>`;
+
+  const buttonsDiv = document.getElementById('buttons');
+  buttonsDiv.innerHTML = '';
+
+  step.options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.textContent = opt.text;
+    btn.onclick = () => goTo(opt.next);
+    buttonsDiv.appendChild(btn);
+  });
+
+  if (historyStack.length > 0) {
+    const backBtn = document.createElement('button');
+    backBtn.textContent = 'Back';
+    backBtn.classList.add('back-btn');
+    backBtn.onclick = goBack;
+    buttonsDiv.appendChild(backBtn);
+  }
+}
+
+function goTo(nextStep) {
+  historyStack.push(currentStep);
+  renderStep(nextStep);
+}
+
+function goBack() {
+  const prev = historyStack.pop();
+  if (prev) renderStep(prev);
+}
+
+function goHome() {
+  historyStack = [];
+  renderStep('start');
+}
+
+// Initial render
+renderStep('start');
+
+// -------------------------
+// Register service worker
+// -------------------------
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(reg => console.log('Service Worker registered:', reg))
+      .catch(err => console.error('Service Worker registration failed:', err));
+  });
+}
+</script>
+</body>
+</html>
