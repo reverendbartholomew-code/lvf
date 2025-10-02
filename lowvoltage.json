@@ -98,7 +98,7 @@
     ]
   },
   "fan_call": {
-  "text": "Is there 24vac between G and C at the ASK MIKE",
+  "text": "Is there 24vac between G and C at the indoor unit's control stip (or fan relay)?",
     "options": [
       { "text": "Yes", "next": "fan_power" },
       {"text": "No", "next": "replace_stat"}
@@ -140,7 +140,7 @@
     ]
   },
   "cool_call": {
-  "text": "Is there 24vac between Y and C at ASK MIKE?",
+  "text": "Is there 24vac between Y and C at the indoor unit's control strip?",
     "options": [
       {"text": "Yes", "next": "cond_yc"},
       {"text": "No", "next": "verify_connections"}
@@ -154,7 +154,7 @@
     ]
   },
   "cond_yc": {
-  "text": "Are the correct wires landed on Y and C at the condenser? (ASK MIKE)",
+  "text": "Are the correct wires landed on Y and C for the condenser? (There should be two wires on Y and two wires on C)",
     "options": [
       {"text": "Yes", "next": "contactor_coil"},
       {"text": "No", "next": "cond_wires"}
@@ -265,7 +265,7 @@
     ]
   },
   "rev_cool_2": {
-  "text": "Is there supposed to be 24vac for cooling operations? This MUST be verified with the manufacturer. ASK MIKE",
+  "text": "Is there supposed to be 24vac for cooling operations? This MUST be verified with the manufacturer.",
     "options": [
       {"text": "Yes", "next": "cob"},
       {"text": "No", "next": "replace_rever_valve"}
