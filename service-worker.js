@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flowchart-cache-v2';
+const CACHE_NAME = 'flowchart-cache-v3';
 const FILES_TO_CACHE = [
   './',
   './index.html',
@@ -37,3 +37,4 @@ self.addEventListener('fetch', evt => {
     caches.match(evt.request).then(resp => resp || fetch(evt.request))
   );
 });
+
